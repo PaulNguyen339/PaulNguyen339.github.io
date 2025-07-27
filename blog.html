@@ -1,0 +1,88 @@
+---
+layout: default
+title: Blog
+---
+
+<div class="blog-posts">
+  <h1>Latest Posts</h1>
+  <a href="/" class="btn back-btn">← Back to Home</a>
+
+  {% for post in site.posts %}
+    <article class="post-preview">
+      <h2>
+        <a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a>
+      </h2>
+      <div class="post-meta">
+        <time datetime="{{ post.date | date_to_xmlschema }}">
+          {% assign date_format = site.date_format | default: "%B %-d, %Y" %}
+          {{ post.date | date: date_format }}
+        </time>
+        {% if post.categories %}
+        <span class="post-categories">
+          in
+          {% for category in post.categories %}
+            <span class="post-category">{{ category }}</span>
+          {% endfor %}
+        </span>
+        {% endif %}
+      </div>
+      <div class="post-excerpt">
+        {{ post.excerpt }}
+      </div>
+      <a href="{{ site.baseurl }}{{ post.url }}" class="read-more">Read more →</a>
+    </article>
+  {% endfor %}
+</div>
+
+{% include footer.html %}
+
+<style>
+  .blog-posts {
+    margin-top: 2rem;
+  }
+  .back-btn {
+    margin-bottom: 2rem;
+    display: inline-block;
+  }
+  .post-preview {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #eff0f1;
+  }
+  .post-preview:last-child {
+    border-bottom: none;
+  }
+  .post-preview h2 {
+    margin-bottom: 0.5rem;
+  }
+  .post-preview h2 a {
+    color: #159957;
+    text-decoration: none;
+  }
+  .post-preview h2 a:hover {
+    text-decoration: underline;
+  }
+  .post-meta {
+    color: #666;
+    margin-bottom: 1rem;
+  }
+  .post-excerpt {
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  .post-category {
+    background: #f3f6fa;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin-right: 0.5rem;
+    font-size: 0.9em;
+  }
+  .read-more {
+    color: #159957;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .read-more:hover {
+    text-decoration: underline;
+  }
+</style>

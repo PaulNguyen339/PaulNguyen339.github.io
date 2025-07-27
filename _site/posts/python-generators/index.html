@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Understanding Python Generators ⚡ - Paul Nguyen</title>
+    <meta name="description" content="☕ Tech stories best served with a hot cup of coffee ☕">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/footer.css">
+    <!-- start custom head snippets, customize with your own _includes/head-custom.html file -->
+
+<!-- Setup Google Analytics -->
+
+
+
+<!-- You can set your favicon here -->
+<!-- link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body>
+    <a id="skip-to-content" href="#content">Skip to the content.</a>
+
+    <header class="page-header" role="banner">
+      <h1 class="project-name">Understanding Python Generators ⚡</h1>
+      <h2 class="project-tagline">☕ Tech stories best served with a hot cup of coffee ☕</h2>
+      
+        <a href="https://github.com/PaulNguyen339/PaulNguyen339.github.io" class="btn">View on GitHub</a>
+      
+      
+    </header>
+
+    <main id="content" class="main-content" role="main">
+      <article class="post">
+  <a href="/" class="btn back-btn">← Back to Home</a>
+
+  <h1>Understanding Python Generators ⚡</h1>
+
+  <div class="post-date">
+    <time datetime="2024-03-21T00:00:00+07:00">
+      
+      March 21, 2024
+    </time>
+  </div>
+
+  <div class="post-content">
+    <h1 id="python-generators-the-memory-efficient-way-to-handle-data">Python Generators: The Memory-Efficient Way to Handle Data</h1>
+
+<p>Have you ever tried to process a massive dataset only to watch your program crash with an <code class="language-plaintext highlighter-rouge">MemoryError</code>? Or seen your system grind to a halt as RAM usage spikes to 100%? If you’re working with large datasets, log files, or streaming data, Python generators might just be the solution you’ve been looking for.</p>
+
+<h2 id="what-are-generators">What Are Generators?</h2>
+
+<p>A generator is a special type of function that can pause its execution using the <code class="language-plaintext highlighter-rouge">yield</code> keyword and resume from exactly where it left off on the next call. Unlike regular functions that run to completion and return a single value, generators can produce a sequence of values over time, maintaining their internal state between calls.</p>
+
+<p>Here’s the key insight: when a generator function receives a call, it will either:</p>
+<ul>
+  <li>Run from the start (if it’s the first call or previous execution completed)</li>
+  <li>Resume from the last <code class="language-plaintext highlighter-rouge">yield</code> statement (preserving all local variables and execution state)</li>
+</ul>
+
+<p>Think of it like reading a book with a bookmark. You can pause at any chapter, close the book, and when you return, you pick up exactly where you left off – with full context of everything that happened before.</p>
+
+<h2 id="understanding-the-difference-functions-vs-generators">Understanding the Difference: Functions vs Generators</h2>
+
+<p>Let’s explore this with a practical example – generating Fibonacci numbers:</p>
+
+<h3 id="traditional-function-approach">Traditional Function Approach</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">fibonacci_list</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="s">"""Generate first n Fibonacci numbers and return as list"""</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">result</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="c1"># Usage
+</span><span class="n">numbers</span> <span class="o">=</span> <span class="n">fibonacci_list</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span>  <span class="c1"># Creates list with 1M numbers
+</span><span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Memory usage: ~</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">numbers</span><span class="p">)</span> <span class="o">*</span> <span class="mi">28</span><span class="si">}</span><span class="s"> bytes"</span><span class="p">)</span>  <span class="c1"># ~28MB for integers
+</span><span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="k">break</span>  <span class="c1"># We only needed first few, but generated all 1M!
+</span></code></pre></div></div>
+
+<h3 id="generator-function-approach">Generator Function Approach</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">fibonacci_generator</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="s">"""Generate first n Fibonacci numbers one at a time"""</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">a</span>  <span class="c1"># Pause here, return current value, remember state
+</span>        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="c1"># Usage
+</span><span class="n">numbers</span> <span class="o">=</span> <span class="n">fibonacci_generator</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span>  <span class="c1"># Creates generator object (~200 bytes)
+</span><span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Memory usage: ~200 bytes"</span><span class="p">)</span>  <span class="c1"># Constant, regardless of n
+</span><span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="k">break</span>  <span class="c1"># Only generated what we needed!
+</span></code></pre></div></div>
+
+<h3 id="the-memory-impact">The Memory Impact</h3>
+
+<p>The difference is staggering:</p>
+<ul>
+  <li><strong>List approach:</strong> 28MB for 1 million numbers (all stored simultaneously)</li>
+  <li><strong>Generator approach:</strong> 200 bytes (only current state stored)</li>
+  <li><strong>Memory savings:</strong> 99.999% reduction!</li>
+</ul>
+
+<h2 id="how-generators-work-under-the-hood">How Generators Work Under the Hood</h2>
+
+<p>When you call a generator function, Python doesn’t execute the function immediately. Instead, it returns a generator object:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">simple_generator</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"Starting..."</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="mi">1</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"Middle..."</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="mi">2</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"Ending..."</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="mi">3</span>
+
+<span class="c1"># Create generator object (no execution yet)
+</span><span class="n">gen</span> <span class="o">=</span> <span class="n">simple_generator</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>  <span class="c1"># &lt;class 'generator'&gt;
+</span>
+<span class="c1"># Now let's see the execution flow
+</span><span class="k">print</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>  <span class="c1"># Prints: "Starting..." then returns 1
+</span><span class="k">print</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>  <span class="c1"># Prints: "Middle..." then returns 2
+</span><span class="k">print</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>  <span class="c1"># Prints: "Ending..." then returns 3
+# next(gen)       # Would raise StopIteration
+</span></code></pre></div></div>
+
+<p>Each call to <code class="language-plaintext highlighter-rouge">next()</code> resumes execution from the last <code class="language-plaintext highlighter-rouge">yield</code> point until it hits the next <code class="language-plaintext highlighter-rouge">yield</code> or the function ends.</p>
+
+<h2 id="generator-expressions-the-compact-alternative">Generator Expressions: The Compact Alternative</h2>
+
+<p>Just like list comprehensions, Python offers generator expressions for creating simple generators:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># List comprehension (creates entire list in memory)
+</span><span class="n">squares_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)]</span>  <span class="c1"># ~38MB memory
+</span>
+<span class="c1"># Generator expression (creates generator object)
+</span><span class="n">squares_gen</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">))</span>   <span class="c1"># ~200 bytes memory
+</span>
+<span class="c1"># Both can be iterated the same way
+</span><span class="k">for</span> <span class="n">square</span> <span class="ow">in</span> <span class="n">squares_gen</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">square</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="k">break</span>
+</code></pre></div></div>
+
+<p>Notice the syntax difference: <code class="language-plaintext highlighter-rouge">[]</code> for lists, <code class="language-plaintext highlighter-rouge">()</code> for generators.</p>
+
+<h2 id="the-pros-and-cons">The Pros and Cons</h2>
+
+<h3 id="-advantages">✅ Advantages</h3>
+
+<p><strong>Memory Efficiency</strong>: Only store current state, not entire sequence</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># This won't crash your system
+</span><span class="n">huge_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">))</span>  <span class="c1"># 1 billion numbers, ~200 bytes
+</span></code></pre></div></div>
+
+<p><strong>Lazy Evaluation</strong>: Compute values only when requested</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">expensive_computation</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">complex_calculation</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>  <span class="c1"># Only runs when next() is called
+</span></code></pre></div></div>
+
+<p><strong>Infinite Sequences</strong>: Create sequences that never end</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">fibonacci_infinite</span><span class="p">():</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">a</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="c1"># Can iterate forever without running out of memory
+</span></code></pre></div></div>
+
+<p><strong>Pipeline Composition</strong>: Chain generators for data processing</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">process_data</span><span class="p">():</span>
+    <span class="n">raw_data</span> <span class="o">=</span> <span class="n">read_large_file</span><span class="p">(</span><span class="s">'data.txt'</span><span class="p">)</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="p">(</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">raw_data</span> <span class="k">if</span> <span class="s">'ERROR'</span> <span class="ow">in</span> <span class="n">line</span><span class="p">)</span>
+    <span class="n">processed</span> <span class="o">=</span> <span class="p">(</span><span class="n">parse_error</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">filtered</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">processed</span>
+</code></pre></div></div>
+
+<h3 id="-limitations">❌ Limitations</h3>
+
+<p><strong>One-Time Use</strong>: Generators are exhausted after iteration</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gen</span> <span class="o">=</span> <span class="n">fibonacci_generator</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>  <span class="c1"># [0, 1, 1, 2, 3]
+</span><span class="nb">list</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>  <span class="c1"># [] - generator is exhausted!
+</span></code></pre></div></div>
+
+<p><strong>No Random Access</strong>: Can’t jump to arbitrary positions</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gen</span> <span class="o">=</span> <span class="n">fibonacci_generator</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="c1"># gen[50]  # TypeError: 'generator' object is not subscriptable
+</span></code></pre></div></div>
+
+<p><strong>Debugging Complexity</strong>: Harder to inspect intermediate states</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Can't easily see all values without consuming the generator
+</span><span class="n">gen</span> <span class="o">=</span> <span class="n">fibonacci_generator</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="c1"># print(gen)  # Just shows: &lt;generator object fibonacci_generator at 0x...&gt;
+</span></code></pre></div></div>
+
+<p><strong>State Preservation</strong>: Internal state can be surprising</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">counter</span><span class="p">():</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">yield</span> <span class="n">count</span>
+
+<span class="n">gen</span> <span class="o">=</span> <span class="n">counter</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>  <span class="c1"># 1
+</span><span class="k">print</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">))</span>  <span class="c1"># 2 (remembers previous state)
+</span></code></pre></div></div>
+
+<h2 id="when-should-you-use-generators">When Should You Use Generators?</h2>
+
+<p>Generators shine in these scenarios:</p>
+
+<p><strong>Large Dataset Processing</strong>: When data doesn’t fit comfortably in memory
+<strong>Streaming Data</strong>: Processing data as it arrives (APIs, network streams)
+<strong>ETL Pipelines</strong>: Transform data in stages without intermediate storage
+<strong>Infinite Sequences</strong>: Mathematical sequences, event streams, etc.
+<strong>Resource Management</strong>: When computation is expensive and you might not need all results</p>
+
+<h2 id="real-world-use-cases-preview">Real-World Use Cases Preview</h2>
+
+<p>In the next posts, we’ll dive deep into practical applications:</p>
+
+<ol>
+  <li><strong>File Processing</strong>: Reading and processing multi-gigabyte log files line by line</li>
+  <li><strong>API Data Streaming</strong>: Handling paginated API responses efficiently</li>
+  <li><strong>Data Transformation Pipelines</strong>: Building modular, memory-efficient data processing chains</li>
+  <li><strong>Custom Iteration Patterns</strong>: Creating sophisticated iterators for complex data structures</li>
+</ol>
+
+<h2 id="key-takeaways">Key Takeaways</h2>
+
+<ul>
+  <li>Generators trade memory for computation time – perfect for large datasets</li>
+  <li>They’re lazy: values are computed on-demand, not upfront</li>
+  <li>One generator object can replace thousands of list elements in memory</li>
+  <li>They’re particularly powerful for streaming, ETL, and pipeline scenarios</li>
+  <li>Understanding generators is crucial for writing memory-efficient Python code</li>
+</ul>
+
+<p>Next up: we’ll see generators in action, processing real-world data that would crash traditional approaches.</p>
+
+<hr />
+
+<p><em>This is Part 1 of a 3-part series on Python Generators. <a href="">Part 2: File Processing &amp; Data Streaming →</a></em></p>
+
+  </div>
+
+  
+  <div class="post-categories">
+    <p>Categories:
+      
+        <span class="post-category">python</span>
+      
+    </p>
+  </div>
+  
+</article>
+
+<style>
+  .back-btn {
+    margin-bottom: 2rem;
+    display: inline-block;
+  }
+  .post {
+    margin-top: 2rem;
+  }
+  .post-date {
+    color: #666;
+    margin-bottom: 2rem;
+  }
+  .post-content {
+    margin-bottom: 2rem;
+  }
+  .post-category {
+    background: #f3f6fa;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin-right: 0.5rem;
+  }
+  .post h1 {
+    margin-bottom: 0.5rem;
+  }
+</style>
+    </main>
+
+    <footer class="site-footer">
+  <div class="footer-content">
+    <div class="footer-section">
+      <h3>Navigation</h3>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/blog/">Blog</a></li>
+        <li><a href="/about/">About Me</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h3>Latest Posts</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/posts/python-generators/">Understanding Python Generators ⚡</a></li>
+        
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h3>Connect</h3>
+      <p class="footer-tagline">
+        ☕ Tech stories best served with a hot cup of coffee ☕
+      </p>
+      <p class="footer-copyright">
+        &copy; 2025 Paul Nguyen. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>
+
+  </body>
+</html>
