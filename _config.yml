@@ -4,6 +4,9 @@ plugins:
 title: "Paul Nguyen"
 description: "☕ Tech stories best served with a hot cup of coffee ☕"
 
+# Favicon settings
+favicon: "/assets/icon.png"
+
 # Build settings
 markdown: kramdown
 permalink: /posts/:title/

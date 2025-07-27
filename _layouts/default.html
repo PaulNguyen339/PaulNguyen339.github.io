@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if page.title %}{{ page.title }} - {% endif %}{{ site.title }}</title>
     <meta name="description" content="{{ site.description }}">
+
+    <!-- Favicon -->
+    {% if site.favicon %}
+    <link rel="icon" type="image/png" href="{{ site.favicon | relative_url }}">
+    <link rel="shortcut icon" type="image/png" href="{{ site.favicon | relative_url }}">
+    {% endif %}
+
     <link rel="stylesheet" href="{{ "/assets/css/style.css" | relative_url }}">
     <link rel="stylesheet" href="{{ "/assets/css/footer.css" | relative_url }}">
     {% include head-custom.html %}
@@ -31,5 +38,6 @@
     </main>
 
     {% include footer.html %}
+    {% include background-music.html %}
   </body>
 </html>
