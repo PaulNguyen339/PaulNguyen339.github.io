@@ -394,22 +394,39 @@ categories: tools
         let nextId = 6;
         let schedule = [];
         let matchResults = {};
+        let pairHistory = new Set();
 
         // Khởi tạo khi load trang
         window.onload = function() {
             loadFromStorage();
             renderPlayers();
+            if (schedule.length > 0) {
+                document.getElementById('scheduleSection').style.display = 'block';
+                renderSchedule();
+            }
         };
 
         function saveToStorage() {
-            // Trong môi trường thật, sẽ lưu vào localStorage
-            // localStorage.setItem('pickleballData', JSON.stringify({players, nextId, schedule, matchResults}));
+            const dataToSave = {
+                players,
+                nextId,
+                schedule,
+                matchResults,
+                pairHistory: Array.from(pairHistory)
+            };
+            localStorage.setItem('pickleballData', JSON.stringify(dataToSave));
         }
 
         function loadFromStorage() {
-            // Trong môi trường thật, sẽ load từ localStorage
-            // const saved = localStorage.getItem('pickleballData');
-            // if (saved) { const data = JSON.parse(saved); ... }
+            const saved = localStorage.getItem('pickleballData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                players = data.players || players;
+                nextId = data.nextId || nextId;
+                schedule = data.schedule || [];
+                matchResults = data.matchResults || {};
+                pairHistory = new Set(data.pairHistory || []);
+            }
         }
 
         function clearAll() {
@@ -424,7 +441,9 @@ categories: tools
                 nextId = 6;
                 schedule = [];
                 matchResults = {};
+                pairHistory = new Set();
 
+                localStorage.removeItem('pickleballData');
                 document.getElementById('scheduleSection').style.display = 'none';
                 document.getElementById('leaderboardSection').style.display = 'none';
                 renderPlayers();
@@ -638,15 +657,38 @@ categories: tools
         }
 
         function saveScore(matchIndex, team1Score, team2Score) {
-            if (team1Score !== '' && team2Score !== '' &&
-                !isNaN(team1Score) && !isNaN(team2Score)) {
-                matchResults[matchIndex] = {
-                    team1Score: parseInt(team1Score),
-                    team2Score: parseInt(team2Score)
-                };
-                saveToStorage();
-                renderSchedule();
+            // Kiểm tra input rỗng
+            if (team1Score === '' || team2Score === '') {
+                alert('Vui lòng nhập điểm cho cả hai đội');
+                return;
             }
+
+            // Convert to numbers
+            team1Score = parseInt(team1Score);
+            team2Score = parseInt(team2Score);
+
+            // Kiểm tra số hợp lệ
+            if (isNaN(team1Score) || isNaN(team2Score)) {
+                alert('Vui lòng nhập số hợp lệ');
+                return;
+            }
+
+            if (team1Score < 0 || team2Score < 0) {
+                alert('Điểm số không được âm');
+                return;
+            }
+
+            if (team1Score === team2Score) {
+                alert('Không thể có kết quả hòa');
+                return;
+            }
+
+            matchResults[matchIndex] = {
+                team1Score: team1Score,
+                team2Score: team2Score
+            };
+            saveToStorage();
+            renderSchedule();
         }
 
         function clearMatchScore(matchIndex) {
@@ -681,9 +723,9 @@ categories: tools
                         <div class="score-section">
                             <div style="font-weight: 600; margin-bottom: 8px; text-align: center;">Nhập tỉ số</div>
                             <div class="score-input-row">
-                                <input type="number" class="score-input" id="team1Score${index}" min="0" placeholder="0">
+                                <input type="number" class="score-input" id="team1Score${index}" min="0"  onkeypress="return event.charCode >= 48 && event.charCode <= 57">
                                 <span class="score-vs">-</span>
-                                <input type="number" class="score-input" id="team2Score${index}" min="0" placeholder="0">
+                                <input type="number" class="score-input" id="team2Score${index}" min="0"  onkeypress="return event.charCode >= 48 && event.charCode <= 57">
                                 <button class="btn btn-primary btn-small" onclick="saveScore(${index}, document.getElementById('team1Score${index}').value, document.getElementById('team2Score${index}').value)">Lưu</button>
                             </div>
                         </div>
